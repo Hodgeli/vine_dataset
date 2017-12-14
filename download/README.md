@@ -8,3 +8,5 @@ down_ok:存储所有已下载成功视频的id
 down_ok_this_time:存储本次下载所有已下载成功视频的id
 url_error:存储所有下载失败视频的id和url
 url_error_this_time:存储本次所有下载失败视频的id和url
+
+相关数据处理逻辑及代码说明见：[vine数据集处理](https://hodgeli.github.io/2017/11/30/handle-tag/ "blog")
