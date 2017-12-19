@@ -8,7 +8,7 @@ def file_name(file_dir):  # 获取视频名list
     return files
 
 
-videos_path = 'D:/videos/videos_20171207'  # 填写存放视频的文件夹路径
+videos_path = '/home/hodge/work_space/videos/videos_example'  # 填写存放视频的文件夹路径
 list_videos_name = file_name(videos_path)
 
 f_list_videos_name = open("list_videos.txt", 'w', encoding='utf8', errors='ignore')

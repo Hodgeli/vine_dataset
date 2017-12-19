@@ -1,5 +1,4 @@
-# 配置video_path、mkpath_images和mkpath_audios内容
-import cv2
+# 首先配置video_path和root_path内容
 import os
 import subprocess
 import json
@@ -43,10 +42,10 @@ def get_lines(file_name):
 
 
 def get_time(filename):
-    command = ["ffprobe.exe", "-loglevel", "quiet", "-print_format", "json", "-show_format", "-show_streams", "-i",
-               filename]
+    command = 'ffprobe -loglevel quiet -print_format json -show_format -show_streams -i ' + filename
     result = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     out = result.stdout.read()
+
     temp = str(out.decode('utf-8'))
     data = json.loads(temp)["format"]['duration']
     return data
@@ -61,7 +60,6 @@ def get_flag_list(flag):
     return list_flag
 
 
-# list_videos = []
 f_list_videos = open("list_videos.txt", encoding='utf8', errors='ignore')
 a = f_list_videos.read()
 list_videos = eval(a)
@@ -112,42 +110,50 @@ f = open("dict_id_text.txt", encoding='utf8', errors='ignore')
 a = f.read()
 dict_id_text = eval(a)
 f.close()
-print("dict_id_text读取成功\n")
+print("dict_id_text读取成功")
+
+f = open("dict_id_num.txt", encoding='utf8', errors='ignore')
+a = f.read()
+dict_id_num = eval(a)
+f.close()
+print("dict_id_num读取成功\n")
 
 print('---开始抽取---')
-flag = 1
+flag_num = 1
 for video_name in list_videos:
     try:
-        video_path = 'D:/videos/videos_20171207/' + str(video_name)  # 配置视频文件夹路径
-        video_cap = cv2.VideoCapture(video_path)
-
-        frame_count = 0
-        all_frames = []
-        while (True):
-            ret, frame = video_cap.read()
-            if ret is False:
-                break
-            all_frames.append(frame)  # 视频所有帧存list
-            frame_count = frame_count + 1  # 帧数
-
-        i = 0
-        flag = int(frame_count / 12)
+        video_path = '/home/hodge/work_space/videos/videos_example/' + str(video_name)  # 配置视频文件夹路径
         video_name = video_name.replace(".mp4", "")
-        mkpath_images = "I:/images/" + video_name + '/images'  # 路径全英文---存12帧图片文件夹路径
+        video_num = dict_id_num[str(video_name)]
+
+        root_path = '/home/hodge/work_space/videos/dataset/'
+        mkpath_images = root_path + video_num + '/images'  # 路径全英文---存12帧图片文件夹路径
         mkdir(mkpath_images)
-        mkpath_audios = "I:/images/" + video_name + '/audios'  # 路径全英文---存音频文件夹路径
+        mkpath_audios = root_path + video_num + '/audios'  # 路径全英文---存音频文件夹路径
         mkdir(mkpath_audios)
-        mkpath_texts = "I:/images/" + video_name + '/texts'  # 路径全英文---存文本文件夹路径
+        mkpath_texts = root_path + video_num + '/texts'  # 路径全英文---存文本文件夹路径
         mkdir(mkpath_texts)
-        for frame in all_frames:
-            i = i + 1
-            if (i % flag == 0 and i <= flag * 12):
-                path = mkpath_images + '/' + str(int(i / flag)) + '.jpg'
-                cv2.imwrite(path, frame)  # 存储为图像
+
+        # video_time = get_time(video_path)
+        # time_flag = 12.0 / float(video_time)
+        #
+        # cmd = r'ffmpeg -i ' + video_path + ' -r ' + str(
+        #     time_flag) + ' -vframes 12 ' + mkpath_images + '/%02d.jpg -loglevel quiet -y'
+        # os.system(cmd)
+
+        video_time = get_time(video_path)
+        list_time = [12, 6, 4, 3, 3, 2, 2]
+        time_flag = int(float(video_time))
+
+        cmd = r'ffmpeg -i ' + video_path + ' -r ' + str(
+            list_time[time_flag - 1]) + ' -vframes 12 ' + mkpath_images + '/%d.jpg -loglevel quiet -y'
+        # print(cmd)
+        os.system(cmd)
+
         audio_path = mkpath_audios + '/' + video_name + '.mp3'
         cmd = 'ffmpeg -i ' + video_path + ' -f mp3 -vn ' + audio_path + ' -loglevel quiet -y'
         os.system(cmd)  # 提取音频
-
+        # print(video_path + '\n' + mkpath_images + '\n' + audio_path + '\n')
         video_time = get_time(video_path)  # 音频分段
         video_time = int(float(video_time) * 1000)
         flag = int(video_time / 6)
@@ -156,24 +162,24 @@ for video_name in list_videos:
         start = 0
         end = flag
         for i in range(1, 7):
-            cmd = 'ffmpeg -y -vn -ss 00:00:0' + str(int(start / 1000)) + '.' + str(
+            cmd = 'ffmpeg -y -i ' + audio_path + ' -ss 00:00:0' + str(int(start / 1000)) + '.' + str(
                 int(start % 1000)) + ' -t 00:00:0' + str(
                 int(
-                    flag / 1000)) + '.' + every_time + ' -i ' + audio_path + ' -codec copy ' + mkpath_audios + '/' + str(
+                    flag / 1000)) + '.' + every_time + ' -codec copy ' + mkpath_audios + '/' + str(
                 i) + '.mp3' + ' -loglevel quiet'
             # print(cmd)
             os.system(cmd)
             start += flag
             end += flag
 
-        f_video_text = open(mkpath_texts+'/text.txt', 'w', encoding='utf8', errors='ignore')
-        f_video_text.write(str(dict_id_text[video_name])+'\n')
+        f_video_text = open(mkpath_texts + '/text.txt', 'w', encoding='utf8', errors='ignore')
+        f_video_text.write(str(dict_id_text[video_name]) + '\n')
         f_video_text.close()
         print('。。。。。')
         f_extract_ok_this_time = open("extract_ok_this_time.txt", 'a', encoding='utf8', errors='ignore')
         f_extract_ok_this_time.write(str(video_name) + '\n')
         f_extract_ok_this_time.close()
-        flag += 1
+        flag_num += 1
     except (TimeoutError):
         print('----video打开失败----')
         f_video_error_this_time = open("video_error_this_time.txt", 'a', encoding='utf8', errors='ignore')
@@ -183,6 +189,6 @@ for video_name in list_videos:
             get_lines('video_error_this_time.txt')) + '条')
         # print(dict_video_error_this_time)
         print('已保存并跳过此条video_id，抽取继续-->')
-    if (flag % 1000 == 0):
-        print('本次已抽取' + flag + '条视频')
-print("****下载抽取完成****")
+    if (flag_num % 1000 == 0):
+        print('本次已抽取' + flag_num + '条视频')
+print("****抽取完成****")
